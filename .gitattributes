@@ -1,0 +1,2 @@
+# Unified diffs need a context prefix before blank lines and source tabs.
+*.patch whitespace=-blank-at-eol,-space-before-tab

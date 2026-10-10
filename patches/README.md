@@ -7,7 +7,16 @@ directory that is not newer than the libinput being built.
 | Directory | Applies to | Patches | Tested on hardware |
 |-----------|------------|---------|--------------------|
 | `1.28`    | 1.28 to 1.30 | default-on only | no, apply-tested only |
-| `1.31`    | 1.31 and 1.32 | default-on, finger-down entry with tap-to-click | 1.31.1 (TUXEDO OS 24.04, KWin 6.6) |
+| `1.31`    | 1.31 | default-on, finger-down entry with tap-to-click, immediate drag | extra patch not yet hardware-tested |
+| `1.32`    | 1.32 and later compatible versions | same behavior, adapted to the changed timer helper | not yet hardware-tested |
+
+This fork adds `0003-instant-finger-drag.patch` in both the `1.31` and
+`1.32` series. It bypasses the
+swipe-or-drag start state, calls the existing drag-start handler, and then
+forwards motion queued in that frame. The now-unused timer-setting helper
+is removed too, avoiding an unused-static-function warning. The configured
+finger count no longer produces swipe events. Release/reposition timing is
+unchanged. See [fork validation](../docs/INSTANT-DRAG.md).
 
 Releases before 1.31 have no fast-swipe disambiguation, so the drag does not
 need the finger-down entry fix there.

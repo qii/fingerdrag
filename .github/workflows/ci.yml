@@ -7,6 +7,33 @@ on:
     - cron: "17 5 * * 1"
 
 jobs:
+  instant-drag:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - version: "1.31.1"
+            series: "1.31"
+          - version: "1.32.0"
+            series: "1.32"
+    steps:
+      - uses: actions/checkout@v5
+      - name: Apply patches and check immediate event ordering
+        env:
+          LIBINPUT_VERSION: ${{ matrix.version }}
+          PATCH_SERIES: ${{ matrix.series }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/libinput/src"
+          for file in evdev-mt-touchpad-gestures.c evdev-mt-touchpad-tap.c; do
+            curl --fail --location --retry 3 \
+              "https://gitlab.freedesktop.org/libinput/libinput/-/raw/$LIBINPUT_VERSION/src/$file" \
+              -o "$RUNNER_TEMP/libinput/src/$file"
+          done
+          for patch_file in "patches/$PATCH_SERIES/"*.patch; do
+            patch --batch --forward --fuzz=0 -d "$RUNNER_TEMP/libinput" -p1 < "$patch_file"
+          done
+          python3 tests/instant-drag.py "$RUNNER_TEMP/libinput/src/evdev-mt-touchpad-gestures.c"
+
   lint:
     runs-on: ubuntu-latest
     steps:

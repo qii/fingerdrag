@@ -1,0 +1,45 @@
+Subject: [PATCH] touchpad: start multi-finger drag without swipe arbitration
+
+For libinput 1.31.1 after fingerdrag 0.3.0's 1.31 patch series.
+Reserve the configured drag finger count for dragging. Start the button
+press and forward queued motion without the 80 ms swipe decision window.
+Other finger counts and the existing drag release logic are unchanged.
+
+--- a/src/evdev-mt-touchpad-gestures.c
++++ b/src/evdev-mt-touchpad-gestures.c
+@@ -589,13 +589,6 @@
+ }
+ 
+ static void
+-tp_gesture_set_3fg_drag_3fg_or_swipe_timer(struct tp_dispatch *tp, usec_t time)
+-{
+-	libinput_timer_set(&tp->gesture.drag_3fg_or_swipe_timer,
+-			   usec_add(time, DRAG_3FG_OR_SWIPE_TIMEOUT));
+-}
+-
+-static void
+ tp_gesture_handle_event_on_state_unknown(struct tp_dispatch *tp,
+ 					 enum gesture_event event,
+ 					 usec_t time)
+@@ -1894,15 +1887,12 @@
+ static void
+ tp_gesture_handle_state_3fg_drag_or_swipe_start(struct tp_dispatch *tp, usec_t time)
+ {
+-	const struct normalized_coords zero = { 0.0, 0.0 };
+-	gesture_notify_swipe(&tp->device->base,
+-			     time,
+-			     LIBINPUT_EVENT_GESTURE_SWIPE_BEGIN,
+-			     tp->gesture.finger_count,
+-			     &zero,
+-			     &zero);
+-	tp->gesture.state = GESTURE_STATE_3FG_DRAG_OR_SWIPE;
+-	tp_gesture_set_3fg_drag_3fg_or_swipe_timer(tp, time);
++	/* The configured finger count is reserved for dragging. Do not
++	 * emit a tentative swipe or wait for the 80 ms classification timer.
++	 * Press the button before forwarding motion from this same frame.
++	 */
++	tp_gesture_handle_state_3fg_drag_start(tp, time);
++	tp_gesture_handle_state_3fg_drag(tp, time);
+ }
+ 
+ static void

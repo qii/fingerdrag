@@ -1,4 +1,17 @@
-# fingerdrag
+# fingerdrag — immediate-drag fork
+
+This fork reserves the selected finger count for dragging. On libinput 1.31
+and later, it skips the 80 ms swipe-versus-drag decision window: recognition
+of the configured finger count starts the left-button press and forwards
+queued pointer motion immediately. Swipes using that finger count are no
+longer emitted. Other finger counts and drag-release timing are unchanged.
+Hardware and finger-count detection can still add latency.
+
+Based on [SuperDaveOrg/fingerdrag](https://github.com/SuperDaveOrg/fingerdrag).
+The extra patch lives in [`patches/1.31`](patches/1.31) and
+[`patches/1.32`](patches/1.32); the installer selects the matching series.
+See [fork validation](docs/INSTANT-DRAG.md) for scope and test limitations.
+
 
 macOS-style three- and four-finger drag for Linux touchpads, on desktops that
 do not offer the setting.
@@ -27,7 +40,7 @@ compositor has to turn it on. Run the doctor to see where your system stands:
 
 Debian, Ubuntu, Linux Mint and other systems based on them:
 
-    git clone https://github.com/SuperDaveOrg/fingerdrag
+    git clone https://github.com/qii/fingerdrag
     cd fingerdrag
     ./fingerdrag install
 
@@ -91,12 +104,19 @@ patched libinput reads when the session starts.
 - **Default on.** `tp_3fg_drag_default()` returns multi-finger drag instead
   of disabled. The finger count is a compiled-in default that the
   `LIBINPUT_DRAG_3FG_DEFAULT` environment variable can override.
+- **Immediate drag, no swipe arbitration** (this fork, libinput 1.31 and later).
+  Bypasses the 80 ms decision window, presses the left button and forwards
+  queued motion in the same input frame. The configured drag finger count
+  is reserved for dragging.
 - **Responsive start with tap-to-click** (libinput 1.31 and later). Upstream
   only takes the immediate finger-down path into the drag when tapping is
   disabled. With tapping enabled, quick drags are usually read as swipes.
   The patch gives the drag finger count to the drag.
 
-## Tested
+## Upstream testing
+
+The following results are reported by upstream and do not validate this
+fork's extra immediate-drag patch. See [fork validation](docs/INSTANT-DRAG.md).
 
 | System | libinput | Mode | Result |
 |--------|----------|------|--------|
@@ -117,8 +137,9 @@ gesture behaviour. Reports from real hardware are welcome.
 - Debian and Ubuntu family only for now. Arch users have the
   `libinput-three-finger-drag` AUR package.
 - Systems with libinput installed for several architectures are refused.
-- Desktop gesture daemons such as touchegg see the same change: slow swipes
-  with the drag finger count become drags.
+- Desktop gesture daemons such as touchegg see the same change: swipes
+  with the drag finger count become drags, including fast swipes on libinput
+  1.31 and later in this fork.
 - Where the compositor exposes the setting, `doctor` says so and you should
   use that instead.
 
